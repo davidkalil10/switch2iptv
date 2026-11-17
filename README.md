@@ -1,6 +1,8 @@
-# IPTV Player para Nintendo Switch
+# IPTV Player para Nintendo Switch e Nintendo Switch 2
 
-Player de IPTV homebrew para Nintendo Switch (Atmosphère/hbmenu), escrito em
+Player de IPTV homebrew para Nintendo Switch (Atmosphère/`hbmenu`) e
+Nintendo Switch 2 (`kaiHEN`/`ounce-hbmenu`), adaptado a partir do projeto original
+[gomprime/switchiptv](https://github.com/gomprime/switchiptv), escrito em
 C++ com [borealis](https://github.com/dragonflylee/borealis) (UI nativa com
 navegação por controle) e [mpv](https://mpv.io/)/FFmpeg para reprodução.
 
@@ -18,6 +20,14 @@ navegação por controle) e [mpv](https://mpv.io/)/FFmpeg para reprodução.
 - Interface em português
 
 ## Instalação
+
+### Nintendo Switch 2 (`kaiHEN` / `ounce-hbmenu`)
+
+1. Baixe o `IptvPlayerSwitch-switch2.nro` da página de releases.
+2. Copie para a pasta `/switch/` do cartão SD.
+3. Abra pelo `ounce-hbmenu`.
+
+### Nintendo Switch (Switch 1)
 
 1. Baixe o `IptvPlayerSwitch.nro` da página de releases.
 2. Copie para a pasta `/switch/` do cartão SD.
@@ -84,18 +94,22 @@ públicos em português) faz parte do repositório
   (vendorizada em `source/third_party/`)
 - [libcurl](https://curl.se/libcurl/) — HTTP
 - [devkitPro](https://devkitpro.org/) / libnx — toolchain de homebrew
+- [ouncebrew](https://github.com/ouncebrew) (`libounce` / `OunceVK` / `ounce-devkit`) — SDK de homebrew e backend EGL/GLES3/Vulkan para Nintendo Switch 2
 - [iptv-org/iptv](https://github.com/iptv-org/iptv) — playlist M3U pública
   sugerida na tela de login
 
-Desenvolvido por GomGeek com o [Claude Code](https://claude.com/claude-code)
-(Anthropic).
+Projeto original desenvolvido por **GomGeek** ([@gomprime](https://github.com/gomprime))
+em [gomprime/switchiptv](https://github.com/gomprime/switchiptv) com o
+[Claude Code](https://claude.com/claude-code) (Anthropic).
 
 Adaptação e port para Nintendo Switch 2 (`libounce` + `OunceVK`) por
-David Kalil Braga ([@davidkalil10](https://github.com/davidkalil10)).
+**David Kalil Braga** ([@davidkalil10](https://github.com/davidkalil10)).
 
 ## Agradecimentos
 
-CostelaBR e AurelioEB.
+Agradecimento especial a **GomGeek** ([@gomprime](https://github.com/gomprime))
+pelo projeto original [switchiptv](https://github.com/gomprime/switchiptv) que serviu
+de base para este port, e também a **CostelaBR** e **AurelioEB**.
 
 ## Licença
 
