@@ -30,6 +30,9 @@ endif ()
 # via `nxlink` sem precisar reconfigurar o build inteiro toda hora.
 if (PLATFORM_SWITCH)
     list(APPEND APP_PLATFORM_OPTION -DDEBUG)
+    if (NINTENDO_SWITCH2)
+        list(APPEND APP_PLATFORM_OPTION -D__SWITCH2__ -DUSE_GLES3)
+    endif ()
 endif ()
 
 # toolchain (precisa vir antes do project())
@@ -40,7 +43,13 @@ set(VERSION_MAJOR "1")
 set(VERSION_MINOR "0")
 set(VERSION_ALTER "8")
 set(VERSION_BUILD "0")
-set(PROJECT_AUTHOR "gomprime")
+if (NINTENDO_SWITCH2)
+    set(PROJECT_AUTHOR "gomprime / David Kalil Braga")
+    set(IPTV_NRO_NAME "${PROJECT_NAME}-switch2.nro")
+else ()
+    set(PROJECT_AUTHOR "gomprime")
+    set(IPTV_NRO_NAME "${PROJECT_NAME}.nro")
+endif ()
 set(PACKAGE_NAME "com.iptvplayer.switch")
 
 # Mesmo logo dos outros clientes do projeto (o hbmenu exige JPEG 256x256).
@@ -86,8 +95,14 @@ else ()
     # PKG_CONFIG_LIBDIR=$DEVKITPRO/portlibs/switch/lib/pkgconfig
     find_package(PkgConfig REQUIRED)
     pkg_search_module(MPV REQUIRED mpv)
+    if (NINTENDO_SWITCH2)
+        list(APPEND APP_PLATFORM_INCLUDE ${DEVKITPRO}/portlibs/switch2/include)
+    endif ()
     list(APPEND APP_PLATFORM_INCLUDE ${MPV_INCLUDE_DIRS})
     list(APPEND APP_PLATFORM_LIB ${MPV_LIBRARIES})
+    if (NINTENDO_SWITCH2)
+        link_directories(${DEVKITPRO}/portlibs/switch2/lib)
+    endif ()
     link_directories(${MPV_LIBRARY_DIRS})
 endif ()
 
@@ -100,6 +115,10 @@ list(APPEND APP_PLATFORM_INCLUDE ${CMAKE_CURRENT_SOURCE_DIR}/source/third_party)
 program_target(${PROJECT_NAME} "${MAIN_SRC}")
 set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD 17)
 target_include_directories(${PROJECT_NAME} PRIVATE source ${APP_PLATFORM_INCLUDE})
+if (NINTENDO_SWITCH2)
+    target_link_directories(${PROJECT_NAME} BEFORE PRIVATE ${DEVKITPRO}/portlibs/switch2/lib)
+    target_link_options(${PROJECT_NAME} PRIVATE -Wl,-Map=${CMAKE_BINARY_DIR}/${PROJECT_NAME}-switch2.map)
+endif ()
 target_compile_options(${PROJECT_NAME} PRIVATE -ffunction-sections -fdata-sections -Wunused-variable ${APP_PLATFORM_OPTION})
 target_link_libraries(${PROJECT_NAME} PRIVATE borealis lunasvg ${APP_PLATFORM_LIB})
 target_compile_definitions(${PROJECT_NAME} PRIVATE
@@ -118,6 +137,6 @@ elseif (PLATFORM_SWITCH)
     add_custom_target(${PROJECT_NAME}.nro DEPENDS ${PROJECT_NAME}
         COMMAND ${NX_NACPTOOL_EXE} --create "IPTV Player" "${PROJECT_AUTHOR}" "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_ALTER}" ${PROJECT_NAME}.nacp
         COMMAND ${CMAKE_COMMAND} -E copy_directory ${PROJECT_RESOURCES} ${CMAKE_BINARY_DIR}/resources
-        COMMAND ${NX_ELF2NRO_EXE} ${PROJECT_NAME}.elf ${PROJECT_NAME}.nro --icon=${PROJECT_ICON} --nacp=${PROJECT_NAME}.nacp --romfsdir=${CMAKE_BINARY_DIR}/resources
+        COMMAND ${NX_ELF2NRO_EXE} ${PROJECT_NAME}.elf ${IPTV_NRO_NAME} --icon=${PROJECT_ICON} --nacp=${PROJECT_NAME}.nacp --romfsdir=${CMAKE_BINARY_DIR}/resources
     )
 endif ()

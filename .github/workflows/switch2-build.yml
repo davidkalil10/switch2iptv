@@ -1,0 +1,115 @@
+name: Switch 2 build
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: switch2-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  switch2:
+    name: Nintendo Switch 2 (.nro)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    container:
+      image: devkitpro/devkita64:20260219
+    defaults:
+      run:
+        shell: bash
+    env:
+      DEVKITPRO: /opt/devkitpro
+      DEVKITA64: /opt/devkitpro/devkitA64
+      OUNCE_DEVKIT_COMMIT: 0f38ba80d7ee768c5749278f127749d14ece2036
+      OUNCE_DEVKIT_VERSION: '20261115b'
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          persist-credentials: false
+
+      - name: Configure git safe directory & build tools
+        run: |
+          set -euo pipefail
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git config --global --add safe.directory "$GITHUB_WORKSPACE/library/borealis"
+          git config --global --add safe.directory "$GITHUB_WORKSPACE/library/lunasvg"
+          apt-get update -qq
+          apt-get install -y --no-install-recommends ca-certificates curl xz-utils git cmake ninja-build python3 pkg-config make
+
+      - name: Install Switch portlibs & pinned Switch 2 SDK (ounce-devkit)
+        run: |
+          set -euo pipefail
+          dkp-pacman -Sy --noconfirm
+          dkp-pacman -S --needed --noconfirm switch-curl switch-libmpv switch-ffmpeg
+          sdk="$RUNNER_TEMP/ounce-devkit"
+          git init "$sdk"
+          git -C "$sdk" fetch --depth=1 https://github.com/ouncebrew/ounce-devkit.git "$OUNCE_DEVKIT_COMMIT"
+          git -C "$sdk" checkout --detach FETCH_HEAD
+          test "$(git -C "$sdk" rev-parse HEAD)" = "$OUNCE_DEVKIT_COMMIT"
+          bash "$sdk/install.sh" "$OUNCE_DEVKIT_VERSION"
+          test -f "$DEVKITPRO/libounce/cmake/Switch2.cmake"
+          test -f "$DEVKITPRO/portlibs/switch2/lib/libEGL.a"
+          test -f "$DEVKITPRO/portlibs/switch/lib/libcurl.a"
+          test -f "$DEVKITPRO/portlibs/switch/lib/libmpv.a"
+          cat "$DEVKITPRO/ounce-devkit-version.txt"
+
+      - name: Inspect Switch mpv/ffmpeg portlibs compatibility
+        run: |
+          set -euo pipefail
+          echo "=== mpv pkg-config ==="
+          "$DEVKITPRO/portlibs/switch2/bin/aarch64-none-elf-pkg-config" --libs --static mpv || true
+          echo "=== Check libmpv.a for audio/hwdec/gl symbols ==="
+          aarch64-none-elf-nm -u "$DEVKITPRO/portlibs/switch/lib/libmpv.a" | grep -E "audout|audren|nvdec|deko|dk|egl|glX|glfw|SDL" | sort -u | head -n 60 || true
+          echo "=== Check libavcodec.a for nvtegra/nvdec ==="
+          aarch64-none-elf-nm -g "$DEVKITPRO/portlibs/switch/lib/libavcodec.a" | grep -iE "nvtegra|nvdec" | head -n 40 || true
+
+      - name: Verify Switch 2 package checker tests
+        run: python3 -m unittest tests/test_switch2_package.py -v
+
+      - name: Build & verify IptvPlayerSwitch-switch2.nro
+        env:
+          SWITCH2IPTV_BUILD_JOBS: "4"
+        run: |
+          set -eo pipefail
+          chmod +x scripts/build-switch2.sh
+          if ! bash scripts/build-switch2.sh 2>&1 | tee switch2-build.log; then
+            {
+              echo "### Switch 2 build failed (tail)"
+              echo '```'
+              tail -n 80 switch2-build.log || true
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+          sha256sum build/switch2/IptvPlayerSwitch-switch2.nro > build/switch2/IptvPlayerSwitch-switch2.nro.sha256
+          ls -lh build/switch2/IptvPlayerSwitch-switch2.nro build/switch2/IptvPlayerSwitch-switch2.nro.sha256
+          cat build/switch2/IptvPlayerSwitch-switch2.nro.sha256
+
+      - name: Upload Switch 2 NRO
+        uses: actions/upload-artifact@v4
+        with:
+          name: IptvPlayerSwitch-switch2-${{ github.sha }}
+          if-no-files-found: error
+          path: |
+            build/switch2/IptvPlayerSwitch-switch2.nro
+            build/switch2/IptvPlayerSwitch-switch2.nro.sha256
+
+      - name: Upload Switch 2 build diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: switch2-build-diagnostics-${{ github.sha }}
+          if-no-files-found: ignore
+          path: |
+            switch2-build.log
+            build/switch2/IptvPlayerSwitch-switch2.map
+            build/switch2/CMakeFiles/CMakeConfigureLog.yaml

@@ -25,13 +25,15 @@ navegação por controle) e [mpv](https://mpv.io/)/FFmpeg para reprodução.
 
 ## Compilando
 
+### Nintendo Switch (Switch 1)
+
 Pré-requisitos: [devkitPro](https://devkitpro.org/) com `devkitA64` e as
 portlibs de Switch (`switch-curl`, `switch-libmpv`, `switch-ffmpeg`,
 `switch-glfw`, `switch-mesa`).
 
 ```bash
 git clone --recursive <url-deste-repo>
-cd switchplayer
+cd switch2iptv
 
 # Aplica os ajustes locais na borealis (correções de fonte/estilo e APIs
 # extras de TabFrame/Recycler que o app usa — ver patches/)
@@ -41,9 +43,25 @@ cmake -S . -B build-switch -G Ninja -DPLATFORM_SWITCH=ON
 cmake --build build-switch --target IptvPlayerSwitch.nro
 ```
 
-O `.nro` sai em `build-switch/IptvPlayerSwitch.nro`. Para testar sem trocar
-o cartão SD toda hora, use `nxlink -s build-switch/IptvPlayerSwitch.nro`
-com o console no menu do hbmenu segurando Y.
+O `.nro` sai em `build-switch/IptvPlayerSwitch.nro`.
+
+### Nintendo Switch 2 (`libounce` + `OunceVK`)
+
+Pré-requisitos: `devkitPro` (`devkitA64`), portlibs (`switch-curl`,
+`switch-libmpv`, `switch-ffmpeg`) e o
+[ounce-devkit](https://github.com/ouncebrew/ounce-devkit) instalado em `$DEVKITPRO`.
+
+```bash
+bash scripts/build-switch2.sh
+```
+
+O script aplica `patches/borealis-iptv.patch` e `patches/borealis-switch2.patch`,
+compila o `.nro` usando EGL + OpenGL ES 3.0 (`OunceVK`) e valida o binário
+com `tools/verify_switch2_package.py` (`OUN0` + `ASET` + link map).
+O `.nro` sai em `build/switch2/IptvPlayerSwitch-switch2.nro`.
+
+Para testar sem trocar o cartão SD toda hora, use `nxlink -s <caminho-do-nro>`
+com o console no menu do `hbmenu` / `ounce-hbmenu` segurando Y.
 
 ## Aviso
 
@@ -71,6 +89,9 @@ públicos em português) faz parte do repositório
 
 Desenvolvido por GomGeek com o [Claude Code](https://claude.com/claude-code)
 (Anthropic).
+
+Adaptação e port para Nintendo Switch 2 (`libounce` + `OunceVK`) por
+David Kalil Braga ([@davidkalil10](https://github.com/davidkalil10)).
 
 ## Agradecimentos
 

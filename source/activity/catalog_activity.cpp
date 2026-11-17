@@ -152,8 +152,14 @@ void CatalogActivity::showAbout() {
 
     brls::Label* text = new brls::Label();
     text->setText(
+#ifdef __SWITCH2__
+        "IPTV Player " APP_VERSION " (Switch 2)\n\n"
+        "Desenvolvido por GomGeek com apoio do Claude (Anthropic).\n"
+        "Adaptação Nintendo Switch 2: David Kalil Braga (@davidkalil10).\n\n"
+#else
         "IPTV Player " APP_VERSION "\n\n"
         "Desenvolvido por GomGeek com apoio do Claude (Anthropic).\n\n"
+#endif
         "Agradecimentos: Aurelioeb e CostelaBR.");
     text->setFontSize(brls::Application::getStyle()["brls/dialog/fontSize"]);
     text->setHorizontalAlign(brls::HorizontalAlign::CENTER);

@@ -1,6 +1,13 @@
 #include "ui/mpv_view.hpp"
 
 #include <chrono>
+#ifdef __SWITCH2__
+#include <GLES3/gl3.h>
+#include <nanovg.h>
+
+#define NANOVG_GLES3 1
+#include <nanovg_gl.h>
+#else
 #include <glad/glad.h>
 #include <nanovg.h>
 
@@ -10,6 +17,7 @@
 // _IMPLEMENTATION) evita recompilar o backend inteiro de novo aqui.
 #define NANOVG_GL3 1
 #include <nanovg_gl.h>
+#endif
 
 namespace {
 
@@ -119,7 +127,11 @@ void MpvView::ensureFramebuffer(int width, int height) {
         return;
     }
 
+#ifdef __SWITCH2__
+    nvgImage = nvglCreateImageFromHandleGLES3(brls::Application::getNVGContext(), texture, width, height, 0);
+#else
     nvgImage = nvglCreateImageFromHandleGL3(brls::Application::getNVGContext(), texture, width, height, 0);
+#endif
 
     fbWidth = width;
     fbHeight = height;

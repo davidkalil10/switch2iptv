@@ -1,4 +1,9 @@
+build/
 build-switch/
 *.nro
 *.elf
 *.nacp
+*.map
+switch2-build.log
+__pycache__/
+*.pyc

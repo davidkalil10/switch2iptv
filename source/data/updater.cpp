@@ -22,7 +22,11 @@ namespace {
 
 std::string g_executablePath;
 
+#ifdef __SWITCH2__
+const char kLatestReleaseUrl[] = "https://api.github.com/repos/davidkalil10/switch2iptv/releases/latest";
+#else
 const char kLatestReleaseUrl[] = "https://api.github.com/repos/gomprime/switchiptv/releases/latest";
+#endif
 
 // "v1.0.3" -> {1, 0, 3}. Também aceita sem o 'v' — usado tanto pra tag do
 // GitHub quanto pra APP_VERSION (definido no CMakeLists, sem 'v').
@@ -83,16 +87,27 @@ UpdateCheckResult checkForUpdate() {
     }
 
     std::string downloadUrl;
+    std::string fallbackUrl;
     auto assetsField = data.find("assets");
     if (assetsField != data.end() && assetsField->is_array()) {
         for (const auto& asset : *assetsField) {
             std::string name = asset.value("name", "");
             if (name.size() >= 4 && name.compare(name.size() - 4, 4, ".nro") == 0) {
-                downloadUrl = asset.value("browser_download_url", "");
+                std::string assetUrl = asset.value("browser_download_url", "");
+#ifdef __SWITCH2__
+                if (name.find("switch2") != std::string::npos) {
+                    downloadUrl = assetUrl;
+                    break;
+                }
+                if (fallbackUrl.empty()) fallbackUrl = assetUrl;
+#else
+                downloadUrl = assetUrl;
                 break;
+#endif
             }
         }
     }
+    if (downloadUrl.empty()) downloadUrl = fallbackUrl;
     if (downloadUrl.empty()) {
         result.error = "Release sem arquivo .nro";
         return result;

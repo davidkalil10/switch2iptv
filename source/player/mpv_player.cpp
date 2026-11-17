@@ -1,6 +1,10 @@
 #include "player/mpv_player.hpp"
 
+#ifdef __SWITCH2__
+#include <EGL/egl.h>
+#else
 #include <GLFW/glfw3.h>
+#endif
 #include <mpv/client.h>
 #include <mpv/render_gl.h>
 
@@ -9,7 +13,11 @@ namespace iptv {
 namespace {
 
 void* getProcAddress(void*, const char* name) {
+#ifdef __SWITCH2__
+    return reinterpret_cast<void*>(eglGetProcAddress(name));
+#else
     return reinterpret_cast<void*>(glfwGetProcAddress(name));
+#endif
 }
 
 }  // namespace
