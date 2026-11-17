@@ -126,6 +126,7 @@ if [[ ! -f "$FFMPEG_PREFIX/lib/libavcodec.a" ]] || [[ ! -f "$FFMPEG_PREFIX/lib/l
 fi
 
 echo "==> Configuring IptvPlayerSwitch for Nintendo Switch 2..."
+export PKG_CONFIG_PATH="$FFMPEG_PREFIX/lib/pkgconfig:$PKG_CONFIG_PATH"
 cmake -B "$BUILD_DIR" -G Ninja \
   -DCMAKE_TOOLCHAIN_FILE="$DEVKITPRO/libounce/cmake/Switch2.cmake" \
   -DCMAKE_BUILD_TYPE=Release \

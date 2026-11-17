@@ -101,6 +101,16 @@ else ()
     if (NINTENDO_SWITCH2)
         if (SWITCH2_FFMPEG_DIR)
             list(APPEND APP_PLATFORM_INCLUDE ${SWITCH2_FFMPEG_DIR}/include)
+            set(CMAKE_EXE_LINKER_FLAGS "-L${SWITCH2_FFMPEG_DIR}/lib ${CMAKE_EXE_LINKER_FLAGS}")
+            set(_FILTERED_MPV_LIBS)
+            foreach (_lib IN LISTS MPV_LIBRARIES)
+                if (_lib MATCHES "^(avfilter|avformat|avcodec|swscale|swresample|avutil)$")
+                    list(APPEND _FILTERED_MPV_LIBS "${SWITCH2_FFMPEG_DIR}/lib/lib${_lib}.a")
+                else ()
+                    list(APPEND _FILTERED_MPV_LIBS "${_lib}")
+                endif ()
+            endforeach ()
+            set(MPV_LIBRARIES ${_FILTERED_MPV_LIBS})
         endif ()
         list(APPEND APP_PLATFORM_INCLUDE ${DEVKITPRO}/portlibs/switch2/include)
     endif ()
@@ -108,6 +118,14 @@ else ()
     list(APPEND APP_PLATFORM_LIB ${MPV_LIBRARIES})
     if (NINTENDO_SWITCH2)
         if (SWITCH2_FFMPEG_DIR)
+            list(APPEND APP_PLATFORM_LIB
+                ${SWITCH2_FFMPEG_DIR}/lib/libavfilter.a
+                ${SWITCH2_FFMPEG_DIR}/lib/libavformat.a
+                ${SWITCH2_FFMPEG_DIR}/lib/libavcodec.a
+                ${SWITCH2_FFMPEG_DIR}/lib/libswscale.a
+                ${SWITCH2_FFMPEG_DIR}/lib/libswresample.a
+                ${SWITCH2_FFMPEG_DIR}/lib/libavutil.a
+            )
             link_directories(${SWITCH2_FFMPEG_DIR}/lib)
         endif ()
         link_directories(${DEVKITPRO}/portlibs/switch2/lib)
