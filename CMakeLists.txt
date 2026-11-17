@@ -69,6 +69,8 @@ endif ()
 
 # builda a borealis e o lunasvg
 add_subdirectory(library)
+target_include_directories(borealis BEFORE PUBLIC
+    ${BOREALIS_LIBRARY}/include/borealis/extern/tinyxml2)
 
 if (USE_SYSTEM_CURL)
     find_package(CURL REQUIRED)

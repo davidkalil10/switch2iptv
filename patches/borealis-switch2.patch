@@ -8,7 +8,7 @@ index 1d8eca03..5a17bcb3 100644
  
 -    if (BOREALIS_USE_DEKO3D)
 +    if (NINTENDO_SWITCH2)
-+        list(APPEND BOREALIS_INCLUDE ${DEVKITPRO}/portlibs/switch2/include ${DEVKITPRO}/portlibs/switch/include)
++        list(APPEND BOREALIS_INCLUDE ${DEVKITPRO}/portlibs/switch2/include)
 +        list(APPEND BRLS_PLATFORM_LIBS EGL nx m)
 +        list(APPEND BRLS_PLATFORM_OPTION -D__SWITCH2__)
 +    elseif (BOREALIS_USE_DEKO3D)
