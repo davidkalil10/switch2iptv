@@ -48,8 +48,16 @@ jobs:
           git config --global --add safe.directory "$GITHUB_WORKSPACE/library/lunasvg"
           apt-get update -qq
           apt-get install -y --no-install-recommends ca-certificates git cmake ninja-build pkg-config
-          dkp-pacman -Sy --noconfirm
-          dkp-pacman -S --needed --noconfirm switch-curl switch-libmpv switch-ffmpeg switch-glfw switch-mesa
+          for attempt in 1 2 3 4; do
+            if dkp-pacman -Sy --noconfirm && dkp-pacman -S --needed --noconfirm switch-curl switch-libmpv switch-ffmpeg switch-glfw switch-mesa; then
+              break
+            fi
+            if [ "$attempt" -eq 4 ]; then
+              echo "dkp-pacman failed after $attempt attempts" >&2
+              exit 1
+            fi
+            sleep $((attempt * 15))
+          done
 
       - name: Build IptvPlayerSwitch.nro (Switch 1)
         run: |
@@ -102,8 +110,18 @@ jobs:
       - name: Install Switch portlibs & pinned Switch 2 SDK (ounce-devkit)
         run: |
           set -euo pipefail
-          dkp-pacman -Sy --noconfirm
-          dkp-pacman -S --needed --noconfirm switch-curl switch-libmpv switch-ffmpeg
+          # Stagger away from simultaneous switch1 dkp-pacman hits on pkg.devkitpro.org
+          sleep 15
+          for attempt in 1 2 3 4; do
+            if dkp-pacman -Sy --noconfirm && dkp-pacman -S --needed --noconfirm switch-curl switch-libmpv switch-ffmpeg; then
+              break
+            fi
+            if [ "$attempt" -eq 4 ]; then
+              echo "dkp-pacman failed after $attempt attempts" >&2
+              exit 1
+            fi
+            sleep $((attempt * 15))
+          done
           sdk="$RUNNER_TEMP/ounce-devkit"
           git init "$sdk"
           git -C "$sdk" fetch --depth=1 https://github.com/ouncebrew/ounce-devkit.git "$OUNCE_DEVKIT_COMMIT"
