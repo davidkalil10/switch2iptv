@@ -58,6 +58,8 @@ def verify_link_map(text: str) -> None:
         "/portlibs/switch/lib/libdrm_nouveau.a",
         "/portlibs/switch/lib/libGLESv2.a",
         "/portlibs/switch/lib/libglfw3.a",
+        "/portlibs/switch/lib/libav",
+        "/portlibs/switch/lib/libsw",
         "libdeko3d",
         "hwcontext_nvtegra",
         "nvtegra.o",

@@ -43,7 +43,7 @@ jobs:
           git config --global --add safe.directory "$GITHUB_WORKSPACE/library/borealis"
           git config --global --add safe.directory "$GITHUB_WORKSPACE/library/lunasvg"
           apt-get update -qq
-          apt-get install -y --no-install-recommends ca-certificates curl xz-utils git cmake ninja-build python3 pkg-config make
+          apt-get install -y --no-install-recommends ca-certificates curl xz-utils git cmake ninja-build python3 pkg-config make patch
 
       - name: Install Switch portlibs & pinned Switch 2 SDK (ounce-devkit)
         run: |
@@ -74,6 +74,12 @@ jobs:
 
       - name: Verify Switch 2 package checker tests
         run: python3 -m unittest tests/test_switch2_package.py -v
+
+      - name: Cache clean Switch 2 FFmpeg build
+        uses: actions/cache@v4
+        with:
+          path: build/switch2/ffmpeg-install
+          key: switch2-ffmpeg71-v1-${{ hashFiles('scripts/build-switch2.sh') }}
 
       - name: Build & verify IptvPlayerSwitch-switch2.nro
         env:

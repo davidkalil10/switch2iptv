@@ -49,6 +49,7 @@ class TestSwitch2Package(unittest.TestCase):
         verify_link_map(
             "/opt/devkitpro/libounce/lib/libnx.a\n"
             "/opt/devkitpro/portlibs/switch2/lib/libEGL.a\n"
+            "build/switch2/ffmpeg-install/lib/libavcodec.a\n"
             "/opt/devkitpro/portlibs/switch/lib/libmpv.a\n"
         )
 
@@ -57,7 +58,7 @@ class TestSwitch2Package(unittest.TestCase):
             verify_link_map(
                 "/opt/devkitpro/libounce/lib/libnx.a\n"
                 "/opt/devkitpro/portlibs/switch2/lib/libEGL.a\n"
-                "/opt/devkitpro/portlibs/switch/lib/libglfw3.a(init.o)\n"
+                "/opt/devkitpro/portlibs/switch/lib/libavutil.a(hwcontext_nvtegra.o)\n"
             )
 
 
