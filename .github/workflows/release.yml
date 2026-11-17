@@ -1,0 +1,202 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Release tag (e.g. v1.0.8)'
+        required: true
+        default: 'v1.0.8'
+      prerelease:
+        description: 'Publish as prerelease?'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  switch1:
+    name: Nintendo Switch 1 (.nro)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    container:
+      image: devkitpro/devkita64:20260219
+    defaults:
+      run:
+        shell: bash
+    env:
+      DEVKITPRO: /opt/devkitpro
+      DEVKITA64: /opt/devkitpro/devkitA64
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          persist-credentials: false
+
+      - name: Configure git & install Switch 1 portlibs
+        run: |
+          set -euo pipefail
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git config --global --add safe.directory "$GITHUB_WORKSPACE/library/borealis"
+          git config --global --add safe.directory "$GITHUB_WORKSPACE/library/lunasvg"
+          apt-get update -qq
+          apt-get install -y --no-install-recommends ca-certificates git cmake ninja-build pkg-config
+          dkp-pacman -Sy --noconfirm
+          dkp-pacman -S --needed --noconfirm switch-curl switch-libmpv switch-ffmpeg switch-glfw switch-mesa
+
+      - name: Build IptvPlayerSwitch.nro (Switch 1)
+        run: |
+          set -euo pipefail
+          export PATH="$DEVKITPRO/tools/bin:$DEVKITA64/bin:$DEVKITPRO/portlibs/switch/bin:$PATH"
+          export PKG_CONFIG_PATH="$DEVKITPRO/portlibs/switch/lib/pkgconfig"
+          git -C library/borealis apply ../../patches/borealis-iptv.patch
+          cmake -S . -B build-switch -G Ninja -DPLATFORM_SWITCH=ON
+          cmake --build build-switch --target IptvPlayerSwitch.nro -j4
+          ls -lh build-switch/IptvPlayerSwitch.nro
+
+      - name: Upload Switch 1 NRO
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-switch1-nro
+          if-no-files-found: error
+          path: build-switch/IptvPlayerSwitch.nro
+
+  switch2:
+    name: Nintendo Switch 2 (.nro)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    container:
+      image: devkitpro/devkita64:20260219
+    defaults:
+      run:
+        shell: bash
+    env:
+      DEVKITPRO: /opt/devkitpro
+      DEVKITA64: /opt/devkitpro/devkitA64
+      OUNCE_DEVKIT_COMMIT: 0f38ba80d7ee768c5749278f127749d14ece2036
+      OUNCE_DEVKIT_VERSION: '20261115b'
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          persist-credentials: false
+
+      - name: Configure git safe directory & build tools
+        run: |
+          set -euo pipefail
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git config --global --add safe.directory "$GITHUB_WORKSPACE/library/borealis"
+          git config --global --add safe.directory "$GITHUB_WORKSPACE/library/lunasvg"
+          apt-get update -qq
+          apt-get install -y --no-install-recommends ca-certificates curl xz-utils git cmake ninja-build python3 pkg-config make patch
+
+      - name: Install Switch portlibs & pinned Switch 2 SDK (ounce-devkit)
+        run: |
+          set -euo pipefail
+          dkp-pacman -Sy --noconfirm
+          dkp-pacman -S --needed --noconfirm switch-curl switch-libmpv switch-ffmpeg
+          sdk="$RUNNER_TEMP/ounce-devkit"
+          git init "$sdk"
+          git -C "$sdk" fetch --depth=1 https://github.com/ouncebrew/ounce-devkit.git "$OUNCE_DEVKIT_COMMIT"
+          git -C "$sdk" checkout --detach FETCH_HEAD
+          test "$(git -C "$sdk" rev-parse HEAD)" = "$OUNCE_DEVKIT_COMMIT"
+          bash "$sdk/install.sh" "$OUNCE_DEVKIT_VERSION"
+          test -f "$DEVKITPRO/libounce/cmake/Switch2.cmake"
+          test -f "$DEVKITPRO/portlibs/switch2/lib/libEGL.a"
+          test -f "$DEVKITPRO/portlibs/switch/lib/libcurl.a"
+          test -f "$DEVKITPRO/portlibs/switch/lib/libmpv.a"
+
+      - name: Verify Switch 2 package checker tests
+        run: python3 -m unittest tests/test_switch2_package.py -v
+
+      - name: Cache clean Switch 2 FFmpeg build
+        uses: actions/cache@v4
+        with:
+          path: build/switch2/ffmpeg-install
+          key: switch2-ffmpeg71-v1-${{ hashFiles('scripts/build-switch2.sh') }}
+
+      - name: Build & verify IptvPlayerSwitch-switch2.nro
+        env:
+          SWITCH2IPTV_BUILD_JOBS: "4"
+        run: |
+          set -euo pipefail
+          chmod +x scripts/build-switch2.sh
+          bash scripts/build-switch2.sh
+          ls -lh build/switch2/IptvPlayerSwitch-switch2.nro
+
+      - name: Upload Switch 2 NRO
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-switch2-nro
+          if-no-files-found: error
+          path: build/switch2/IptvPlayerSwitch-switch2.nro
+
+  release:
+    name: Publish GitHub Release
+    needs: [switch1, switch2]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Download release artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release_staging
+          merge-multiple: true
+
+      - name: Prepare release metadata & checksums
+        run: |
+          set -euo pipefail
+          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
+            TAG="${GITHUB_REF_NAME}"
+          else
+            TAG="${{ inputs.release_tag }}"
+          fi
+          echo "RELEASE_TAG=$TAG" >> "$GITHUB_ENV"
+          cd release_staging
+          test -s IptvPlayerSwitch.nro
+          test -s IptvPlayerSwitch-switch2.nro
+          sha256sum IptvPlayerSwitch.nro IptvPlayerSwitch-switch2.nro > SHA256SUMS.txt
+          ls -lh
+          cat SHA256SUMS.txt
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.RELEASE_TAG }}
+          name: "Switch2IPTV ${{ env.RELEASE_TAG }} (Switch 1 & Switch 2)"
+          body: |
+            ## Downloads
+            - **Nintendo Switch 2**: `IptvPlayerSwitch-switch2.nro` (compativel com `kaiHEN` / `ounce-hbmenu`)
+            - **Nintendo Switch 1**: `IptvPlayerSwitch.nro`
+            - **Checksums**: `SHA256SUMS.txt`
+
+            ## Destaques desta versão
+            - Port nativo para **Nintendo Switch 2** usando `libounce` + `OunceVK` (`EGL` + `OpenGL ES 3.0`) com `libmpv` e `FFmpeg 7.1` limpo para `cortex-a78c` (`--disable-nvtegra`, `tls_libnx`, áudio via `libounce`).
+            - Verificação automática de binário Switch 2 (`OUN0`, `ASET` e link map livre de dependências de Switch 1).
+            - Mantido suporte ao build de **Nintendo Switch 1** (`IptvPlayerSwitch.nro`).
+
+            ## Créditos e Agradecimentos
+            - **Projeto original (`switchiptv`)**: [GomGeek (@gomprime)](https://github.com/gomprime) — obrigado pelo excelente projeto base!
+            - **Adaptação Nintendo Switch 2**: [David Kalil Braga (@davidkalil10)](https://github.com/davidkalil10)
+            - **Agradecimentos**: CostelaBR e AurelioEB
+          generate_release_notes: true
+          draft: false
+          prerelease: ${{ github.event_name == 'workflow_dispatch' && inputs.prerelease == true }}
+          files: |
+            release_staging/IptvPlayerSwitch.nro
+            release_staging/IptvPlayerSwitch-switch2.nro
+            release_staging/SHA256SUMS.txt
