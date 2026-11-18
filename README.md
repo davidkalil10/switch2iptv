@@ -1,5 +1,7 @@
 # IPTV Player para Nintendo Switch e Nintendo Switch 2
 
+[![Ko-fi](https://img.shields.io/badge/Ko--fi-Support%20this%20project-FF5E5B?logo=ko-fi&logoColor=white)](https://ko-fi.com/davidkalil10)
+
 Player de IPTV homebrew para Nintendo Switch (Atmosphère/`hbmenu`) e
 Nintendo Switch 2 (`kaiHEN`/`ounce-hbmenu`), adaptado a partir do projeto original
 [gomprime/switchiptv](https://github.com/gomprime/switchiptv), escrito em
@@ -114,3 +116,11 @@ de base para este port, e também a **CostelaBR** e **AurelioEB**.
 ## Licença
 
 [GPLv3](LICENSE).
+
+## Support
+
+If you find **switch2iptv** and our Nintendo Switch 2 homebrew ports useful, consider buying me a coffee to support continued development and maintenance:
+
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/davidkalil10)
+
+👉 **[https://ko-fi.com/davidkalil10](https://ko-fi.com/davidkalil10)**
